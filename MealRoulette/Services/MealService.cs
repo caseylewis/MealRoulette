@@ -6,26 +6,35 @@ namespace MealRoulette.Services
     {
         private readonly List<Meal> _meals = new()
         {
-            new Meal { Name = "Spaghetti", DesiredMonthly = 3, Ingredients = new List<Ingredient> {
+            new Meal { Name = "Spaghetti", DesiredMonthly = 3, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
+                Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Pasta" },
                 new Ingredient { Name = "Tomato Sauce" },
                 new Ingredient { Name = "Meatballs" } } },
-            new Meal { Name = "Tacos", DesiredMonthly = 2, Ingredients = new List<Ingredient> {
+            new Meal { Name = "Tacos", DesiredMonthly = 2, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
+                Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Tortillas" },
                 new Ingredient { Name = "Beef" },
                 new Ingredient { Name = "Cheese" } } },
-            new Meal { Name = "Chicken Stir Fry", DesiredMonthly = 2, Ingredients = new List<Ingredient> {
+            new Meal { Name = "Chicken Stir Fry", DesiredMonthly = 2, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
+                Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Chicken" },
                 new Ingredient { Name = "Vegetables" },
                 new Ingredient { Name = "Soy Sauce" } } },
-            new Meal { Name = "Pizza", DesiredMonthly = 1, Ingredients = new List<Ingredient> {
+            new Meal { Name = "Pizza", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
+                Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Dough" },
                 new Ingredient { Name = "Cheese" },
                 new Ingredient { Name = "Pepperoni" } } },
-            new Meal { Name = "Salmon Salad", DesiredMonthly = 1, Ingredients = new List<Ingredient> {
+            new Meal { Name = "Salmon Salad", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
+                Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Salmon" },
                 new Ingredient { Name = "Lettuce" },
                 new Ingredient { Name = "Dressing" } } },
+            new Meal { Name = "Egg Sandwich", DesiredMonthly = 1, CanBeBreakfast=true, CanBeLunch=false, CanBeDinner=false,
+                Ingredients = new List<Ingredient> {
+                new Ingredient { Name = "Egg" },
+                new Ingredient { Name = "Pita" } } },
         };
 
         public IReadOnlyList<Meal> GetMeals() => _meals;

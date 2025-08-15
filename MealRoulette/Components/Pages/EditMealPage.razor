@@ -10,6 +10,9 @@
     private Meal? meal;
     private string mealName = string.Empty;
     private int mealFrequency = 1;
+    private bool canBeBreakfast = false;
+    private bool canBeLunch = false;
+    private bool canBeDinner = false;
     private List<Ingredient> ingredients = new();
     private static readonly List<string> Units = UnitOfMeasurement.AllUnits.Select(u => u.ShortName).ToList();
     private bool notFound = false;
@@ -24,6 +27,9 @@
         }
         mealName = meal.Name;
         mealFrequency = meal.DesiredMonthly;
+        canBeBreakfast = meal.CanBeBreakfast;
+        canBeLunch = meal.CanBeLunch;
+        canBeDinner = meal.CanBeDinner;
         ingredients = meal.Ingredients.Select(i => new Ingredient
         {
             Name = i.Name,
@@ -49,6 +55,9 @@
         {
             Name = mealName,
             DesiredMonthly = mealFrequency,
+            CanBeBreakfast = canBeBreakfast,
+            CanBeLunch = canBeLunch,
+            CanBeDinner = canBeDinner,
             Ingredients = ingredients.Select(i => new Ingredient
             {
                 Name = i.Name,
@@ -82,6 +91,14 @@ else
     <div class="form-group">
         <label>Meal Frequency (per month):</label>
         <input class="form-control" type="number" @bind="mealFrequency" min="1" />
+    </div>
+    <div class="form-group">
+        <label>Meal Types:</label>
+        <div style="display: flex; gap: 1rem;">
+            <label><input type="checkbox" @bind="canBeBreakfast" /> Breakfast</label>
+            <label><input type="checkbox" @bind="canBeLunch" /> Lunch</label>
+            <label><input type="checkbox" @bind="canBeDinner" /> Dinner</label>
+        </div>
     </div>
     <h4>Ingredients</h4>
     @foreach (var ingredient in ingredients)
