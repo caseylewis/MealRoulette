@@ -1,6 +1,7 @@
 ﻿@page "/meals"
 @using MealRoulette.Models
 @inject NavigationManager Navigation
+@inject MealRoulette.Services.MealService MealService
 
 <h3>Meal List</h3>
 
@@ -29,31 +30,12 @@
 </button>
 
 @code {
-	// This list needs to be dynamically loaded, so that when meals are added it can display newly added data. Create some sort of service, perhaps MealService.cs, which can manage the data, so that other pages can load to it and this page can display what is needed when called.
-	// At some point, a database would be best to have, but I am not quite ready for that yet. For now, we should store it to local memory.
-	private List<Meal> meals = new()
-	{
-		new Meal { Name = "Spaghetti", DesiredMonthly = 3, Ingredients = new List<Ingredient> { 
-			new Ingredient { Name = "Pasta" }, 
-			new Ingredient { Name = "Tomato Sauce" }, 
-			new Ingredient { Name = "Meatballs" } } },
-		new Meal { Name = "Tacos", DesiredMonthly = 2, Ingredients = new List<Ingredient> { 
-			new Ingredient { Name = "Tortillas" }, 
-			new Ingredient { Name = "Beef" }, 
-			new Ingredient { Name = "Cheese" } } },
-		new Meal { Name = "Chicken Stir Fry", DesiredMonthly = 2, Ingredients = new List<Ingredient> { 
-			new Ingredient { Name = "Chicken" }, 
-			new Ingredient { Name = "Vegetables" }, 
-			new Ingredient { Name = "Soy Sauce" } } },
-		new Meal { Name = "Pizza", DesiredMonthly = 1, Ingredients = new List<Ingredient> { 
-			new Ingredient { Name = "Dough" }, 
-			new Ingredient { Name = "Cheese" }, 
-			new Ingredient { Name = "Pepperoni" } } },
-		new Meal { Name = "Salmon Salad", DesiredMonthly = 1, Ingredients = new List<Ingredient> { 
-			new Ingredient { Name = "Salmon" }, 
-			new Ingredient { Name = "Lettuce" }, 
-			new Ingredient { Name = "Dressing" } } },
-	};
+	private List<Meal> meals = new();
+
+    protected override void OnInitialized()
+    {
+        meals = MealService.GetMeals().ToList();
+    }
 
     private void GoToAddMeal()
     {

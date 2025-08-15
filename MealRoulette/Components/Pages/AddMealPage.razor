@@ -1,6 +1,7 @@
 ﻿@page "/add-meal"
 @using MealRoulette.Models
 @inject NavigationManager Navigation
+@inject MealRoulette.Services.MealService MealService
 
 <h3>Add Meal</h3>
 
@@ -65,7 +66,7 @@
                 UnitOfMeasurement = i.UnitOfMeasurement
             }).ToList()
         };
-        // Instead of navigating to a meal details page (which does not exist), navigate back to the Meal List page.
+        MealService.AddMeal(meal);
         Navigation.NavigateTo("/meals", true);
     }
 }

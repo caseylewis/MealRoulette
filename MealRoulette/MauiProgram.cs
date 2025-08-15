@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MealRoulette.Services;
+using Microsoft.Extensions.Logging;
 
 namespace MealRoulette
 {
@@ -15,6 +16,7 @@ namespace MealRoulette
                 });
 
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddSingleton<MealService>();
 
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();
