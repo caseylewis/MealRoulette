@@ -1,0 +1,181 @@
+﻿@page "/mealmixer"
+@using MealRoulette.Models
+@inject MealRoulette.Services.MealService MealService
+
+<h3>Meal Mixer</h3>
+
+<div class="meal-mixer-container">
+    <!-- Day & Meal Selector -->
+    <section>
+        <h4>Select Days & Meals</h4>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            @foreach (var day in DaysOfWeek)
+            {
+                <label>
+                    <input type="checkbox" checked="@SelectedDays.Contains(day)" @onchange="(e) => OnDayCheckboxChanged(e, day)" /> @day
+                </label>
+            }
+        </div>
+        <div style="margin-top: 0.5rem; display: flex; gap: 1rem;">
+            @foreach (var mealType in MealTypes)
+            {
+                <label>
+                    <input type="checkbox" checked="@SelectedMealTypes.Contains(mealType)" @onchange="(e) => OnMealTypeCheckboxChanged(e, mealType)" /> @mealType
+                </label>
+            }
+        </div>
+    </section>
+
+    <!-- Randomizer Button -->
+    <section style="margin-top: 1rem;">
+        <button @onclick="RandomizeMeals" class="btn btn-primary">Randomize Meals</button>
+        @if (IsRandomizing)
+        {
+            <span style="margin-left: 1rem;">Mixing...</span>
+        }
+    </section>
+
+    <!-- Meal Review Section -->
+    <section style="margin-top: 2rem;">
+        <h4>Weekly Meal Plan</h4>
+        @if (WeeklyPlan.Count > 0)
+        {
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        @foreach (var mealType in SelectedMealTypes)
+                        {
+                            <th>@mealType</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var day in SelectedDays)
+                    {
+                        <tr>
+                            <td>@day</td>
+                            @foreach (var mealType in SelectedMealTypes)
+                            {
+                                <td>
+                                    @if (WeeklyPlan.TryGetValue(day, out var mealsForDay) && mealsForDay.TryGetValue(mealType, out var meal) && meal != null)
+                                    {
+                                        <span>@meal.Name</span>
+                                        <button class="btn btn-link btn-sm" @onclick="() => ReplaceMeal(day, mealType)">Re-spin</button>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No plan generated yet.</p>
+        }
+    </section>
+
+    <!-- Submit Button -->
+    <section style="margin-top: 2rem;">
+        <button @onclick="SubmitPlan" class="btn btn-success" disabled="@(WeeklyPlan.Count == 0)">Submit Plan</button>
+        @if (ShowSummary)
+        {
+            <div class="alert alert-info" style="margin-top: 1rem;">
+                <strong>Plan submitted!</strong> Your weekly meal plan has been saved.
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private static readonly string[] DaysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    private static readonly string[] MealTypes = new[] { "Breakfast", "Lunch", "Dinner" };
+
+    private List<string> SelectedDays = DaysOfWeek.ToList();
+    private List<string> SelectedMealTypes = MealTypes.ToList();
+    private Dictionary<string, Dictionary<string, Meal?>> WeeklyPlan = new();
+    private bool IsRandomizing = false;
+    private bool ShowSummary = false;
+
+    protected override void OnInitialized()
+    {
+        Meals = MealService.GetMeals().ToList();
+    }
+
+    private List<Meal> Meals = new();
+
+    private void OnDayCheckboxChanged(ChangeEventArgs e, string day)
+    {
+        var isChecked = (bool)e.Value;
+        if (isChecked && !SelectedDays.Contains(day))
+            SelectedDays.Add(day);
+        else if (!isChecked && SelectedDays.Contains(day))
+            SelectedDays.Remove(day);
+    }
+
+    private void OnMealTypeCheckboxChanged(ChangeEventArgs e, string mealType)
+    {
+        var isChecked = (bool)e.Value;
+        if (isChecked && !SelectedMealTypes.Contains(mealType))
+            SelectedMealTypes.Add(mealType);
+        else if (!isChecked && SelectedMealTypes.Contains(mealType))
+            SelectedMealTypes.Remove(mealType);
+    }
+
+    private void RandomizeMeals()
+    {
+        IsRandomizing = true;
+        WeeklyPlan.Clear();
+        var rand = new Random();
+        foreach (var day in SelectedDays)
+        {
+            WeeklyPlan[day] = new Dictionary<string, Meal?>();
+            foreach (var mealType in SelectedMealTypes)
+            {
+                WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand);
+            }
+        }
+        IsRandomizing = false;
+        ShowSummary = false;
+    }
+
+    private Meal? GetWeightedRandomMeal(Random rand)
+    {
+        if (Meals.Count == 0) return null;
+        var weightedList = new List<Meal>();
+        foreach (var meal in Meals)
+        {
+            for (int i = 0; i < meal.DesiredMonthly; i++)
+            {
+                weightedList.Add(meal);
+            }
+        }
+        if (weightedList.Count == 0) return Meals[rand.Next(Meals.Count)];
+        return weightedList[rand.Next(weightedList.Count)];
+    }
+
+    private void ReplaceMeal(string day, string mealType)
+    {
+        if (!WeeklyPlan.ContainsKey(day))
+        {
+            WeeklyPlan[day] = new Dictionary<string, Meal?>();
+        }
+        if (!WeeklyPlan[day].ContainsKey(mealType))
+        {
+            WeeklyPlan[day][mealType] = null;
+        }
+        var rand = new Random();
+        WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand);
+        StateHasChanged();
+    }
+
+    private void SubmitPlan()
+    {
+        ShowSummary = true;
+    }
+}
