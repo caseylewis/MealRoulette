@@ -29,6 +29,8 @@
 </button>
 
 @code {
+	// This list needs to be dynamically loaded, so that when meals are added it can display newly added data. Create some sort of service, perhaps MealService.cs, which can manage the data, so that other pages can load to it and this page can display what is needed when called.
+	// At some point, a database would be best to have, but I am not quite ready for that yet. For now, we should store it to local memory.
 	private List<Meal> meals = new()
 	{
 		new Meal { Name = "Spaghetti", DesiredMonthly = 3, Ingredients = new List<Ingredient> { 
