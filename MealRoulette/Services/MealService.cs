@@ -35,6 +35,10 @@ namespace MealRoulette.Services
                 Ingredients = new List<Ingredient> {
                 new Ingredient { Name = "Egg" },
                 new Ingredient { Name = "Pita" } } },
+            new Meal { Name = "Turkey Sandwich", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=true, CanBeDinner=false,
+                Ingredients = new List<Ingredient> {
+                new Ingredient { Name = "Turkey" },
+                new Ingredient { Name = "Bread" } } },
         };
 
         public IReadOnlyList<Meal> GetMeals() => _meals;

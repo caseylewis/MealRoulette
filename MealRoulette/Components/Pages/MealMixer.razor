@@ -137,25 +137,32 @@
             WeeklyPlan[day] = new Dictionary<string, Meal?>();
             foreach (var mealType in SelectedMealTypes)
             {
-                WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand);
+                WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand, mealType);
             }
         }
         IsRandomizing = false;
         ShowSummary = false;
     }
 
-    private Meal? GetWeightedRandomMeal(Random rand)
+    private Meal? GetWeightedRandomMeal(Random rand, string mealType)
     {
         if (Meals.Count == 0) return null;
+        IEnumerable<Meal> filteredMeals = mealType switch
+        {
+            "Breakfast" => Meals.Where(m => m.CanBeBreakfast),
+            "Lunch" => Meals.Where(m => m.CanBeLunch),
+            "Dinner" => Meals.Where(m => m.CanBeDinner),
+            _ => Enumerable.Empty<Meal>()
+        };
         var weightedList = new List<Meal>();
-        foreach (var meal in Meals)
+        foreach (var meal in filteredMeals)
         {
             for (int i = 0; i < meal.DesiredMonthly; i++)
             {
                 weightedList.Add(meal);
             }
         }
-        if (weightedList.Count == 0) return Meals[rand.Next(Meals.Count)];
+        if (weightedList.Count == 0) return null;
         return weightedList[rand.Next(weightedList.Count)];
     }
 
@@ -170,7 +177,7 @@
             WeeklyPlan[day][mealType] = null;
         }
         var rand = new Random();
-        WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand);
+        WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand, mealType);
         StateHasChanged();
     }
 
