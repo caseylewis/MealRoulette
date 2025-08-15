@@ -6,9 +6,10 @@
 <h3>Meal List</h3>
 
 <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+<!-- Each meal needs to be editable. When clicked, it should go to a page that is similar to the AddMealPage, except it allows editing the existing meal, with an option to delete the meal as well. -->
 @foreach (var meal in meals)
 {
-	<div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem; min-width: 260px; max-width: 320px; flex: 1 1 260px;">
+	<div @onclick="() => GoToEditMeal(meal.Name)" style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem; min-width: 260px; max-width: 320px; flex: 1 1 260px; cursor: pointer;">
 		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
 			<h4 style="margin: 0; color: #2c3e50;">@meal.Name</h4>
 			<span style="background: #e0e7ff; color: #3730a3; border-radius: 8px; padding: 0.25rem 0.75rem; font-size: 0.95em;">🍽️ @meal.DesiredMonthly x/mo</span>
@@ -40,5 +41,10 @@
     private void GoToAddMeal()
     {
         Navigation.NavigateTo("/add-meal");
+    }
+
+    private void GoToEditMeal(string mealName)
+    {
+        Navigation.NavigateTo($"/edit-meal/{Uri.EscapeDataString(mealName)}");
     }
 }

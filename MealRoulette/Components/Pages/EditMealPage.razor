@@ -1,0 +1,107 @@
+@page "/edit-meal/{MealName}"
+@using MealRoulette.Models
+@inject NavigationManager Navigation
+@inject MealRoulette.Services.MealService MealService
+
+@code {
+    [Parameter]
+    public string MealName { get; set; }
+
+    private Meal? meal;
+    private string mealName = string.Empty;
+    private int mealFrequency = 1;
+    private List<Ingredient> ingredients = new();
+    private static readonly List<string> Units = UnitOfMeasurement.AllUnits.Select(u => u.ShortName).ToList();
+    private bool notFound = false;
+
+    protected override void OnInitialized()
+    {
+        meal = MealService.GetMealByName(MealName);
+        if (meal == null)
+        {
+            notFound = true;
+            return;
+        }
+        mealName = meal.Name;
+        mealFrequency = meal.DesiredMonthly;
+        ingredients = meal.Ingredients.Select(i => new Ingredient
+        {
+            Name = i.Name,
+            Amount = i.Amount,
+            UnitOfMeasurement = i.UnitOfMeasurement
+        }).ToList();
+    }
+
+    private void AddIngredient()
+    {
+        ingredients.Add(new Ingredient());
+    }
+
+    private void RemoveIngredient(Ingredient ingredient)
+    {
+        if (ingredients.Count > 1)
+            ingredients.Remove(ingredient);
+    }
+
+    private void UpdateMeal()
+    {
+        var updatedMeal = new Meal
+        {
+            Name = mealName,
+            DesiredMonthly = mealFrequency,
+            Ingredients = ingredients.Select(i => new Ingredient
+            {
+                Name = i.Name,
+                Amount = i.Amount,
+                UnitOfMeasurement = i.UnitOfMeasurement
+            }).ToList()
+        };
+        MealService.UpdateMealByName(MealName, updatedMeal);
+        Navigation.NavigateTo("/meals", true);
+    }
+
+    private void DeleteMeal()
+    {
+        MealService.DeleteMealByName(MealName);
+        Navigation.NavigateTo("/meals", true);
+    }
+}
+
+@if (notFound)
+{
+    <h3>Meal not found.</h3>
+    <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/meals"))">Back to List</button>
+}
+else
+{
+    <h3>Edit Meal</h3>
+    <div class="form-group">
+        <label>Meal Name:</label>
+        <input class="form-control" @bind="mealName" placeholder="Enter meal name" />
+    </div>
+    <div class="form-group">
+        <label>Meal Frequency (per month):</label>
+        <input class="form-control" type="number" @bind="mealFrequency" min="1" />
+    </div>
+    <h4>Ingredients</h4>
+    @foreach (var ingredient in ingredients)
+    {
+        <div class="ingredient-row" style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+            <input class="form-control" style="width: 30%;" @bind="ingredient.Name" placeholder="Ingredient name" />
+            <input class="form-control" style="width: 20%;" type="number" step="0.01" @bind="ingredient.Amount" placeholder="Amount" />
+            <select class="form-control" style="width: 20%;" @bind="ingredient.UnitOfMeasurement">
+                @foreach (var unit in Units)
+                {
+                    <option value="@unit">@unit</option>
+                }
+            </select>
+            <button type="button" class="btn btn-danger" @onclick="@(() => RemoveIngredient(ingredient))">Delete</button>
+        </div>
+    }
+    <button type="button" class="btn btn-secondary" @onclick="AddIngredient">+ Add Ingredient</button>
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <button class="btn btn-primary" @onclick="UpdateMeal">Update</button>
+        <button class="btn btn-danger" @onclick="DeleteMeal">Delete</button>
+        <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/meals"))">Cancel</button>
+    </div>
+}

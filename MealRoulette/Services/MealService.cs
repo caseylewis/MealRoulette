@@ -34,5 +34,26 @@ namespace MealRoulette.Services
         {
             _meals.Add(meal);
         }
+
+        public bool UpdateMealByName(string name, Meal updatedMeal)
+        {
+            var index = _meals.FindIndex(m => m.Name == name);
+            if (index == -1) return false;
+            _meals[index] = updatedMeal;
+            return true;
+        }
+
+        public bool DeleteMealByName(string name)
+        {
+            var meal = _meals.FirstOrDefault(m => m.Name == name);
+            if (meal == null) return false;
+            _meals.Remove(meal);
+            return true;
+        }
+
+        public Meal? GetMealByName(string name)
+        {
+            return _meals.FirstOrDefault(m => m.Name == name);
+        }
     }
 }
