@@ -1,7 +1,32 @@
 ﻿@page "/meals"
 @using MealRoulette.Models
+@inject NavigationManager Navigation
 
 <h3>Meal List</h3>
+
+<div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
+@foreach (var meal in meals)
+{
+	<div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem; min-width: 260px; max-width: 320px; flex: 1 1 260px;">
+		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+			<h4 style="margin: 0; color: #2c3e50;">@meal.Name</h4>
+			<span style="background: #e0e7ff; color: #3730a3; border-radius: 8px; padding: 0.25rem 0.75rem; font-size: 0.95em;">🍽️ @meal.DesiredMonthly x/mo</span>
+		</div>
+		<div style="margin-bottom: 0.5rem; color: #6b7280; font-size: 1em; font-weight: 500;">Ingredients:</div>
+		<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+			@foreach (var ingredient in meal.Ingredients)
+			{
+				<span style="background: #f3f4f6; color: #374151; border-radius: 6px; padding: 0.25rem 0.75rem; font-size: 0.95em;">@ingredient.Name</span>
+			}
+		</div>
+	</div>
+}
+</div>
+
+<!-- Floating Add Button -->
+<button @onclick="GoToAddMeal" title="Add Meal" style="position: fixed; bottom: 2rem; right: 2rem; width: 56px; height: 56px; border-radius: 50%; background: #6366f1; color: white; border: none; font-size: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.18); z-index: 1000;">
+    +
+</button>
 
 @code {
 	private List<Meal> meals = new()
@@ -27,27 +52,9 @@
 			new Ingredient { Name = "Lettuce" }, 
 			new Ingredient { Name = "Dressing" } } },
 	};
-}
 
-<div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
-@foreach (var meal in meals)
-{
-	<div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1.5rem; min-width: 260px; max-width: 320px; flex: 1 1 260px;">
-		<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-			<h4 style="margin: 0; color: #2c3e50;">@meal.Name</h4>
-			<span style="background: #e0e7ff; color: #3730a3; border-radius: 8px; padding: 0.25rem 0.75rem; font-size: 0.95em;">🍽️ @meal.DesiredMonthly}x/mo</span>
-		</div>
-		<div style="margin-bottom: 0.5rem; color: #6b7280; font-size: 1em; font-weight: 500;">Ingredients:</div>
-		<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-			@foreach (var ingredient in meal.Ingredients)
-			{
-				<span style="background: #f3f4f6; color: #374151; border-radius: 6px; padding: 0.25rem 0.75rem; font-size: 0.95em;">@ingredient.Name</span>
-			}
-		</div>
-	</div>
-}
-</div>
-
-@code {
-
+    private void GoToAddMeal()
+    {
+        Navigation.NavigateTo("/add-meal");
+    }
 }

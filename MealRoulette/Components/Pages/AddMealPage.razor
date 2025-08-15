@@ -1,0 +1,77 @@
+﻿@page "/add-meal"
+@using MealRoulette.Models
+
+<h3>Add Meal</h3>
+
+@* <EditForm Model="@newMeal" OnValidSubmit="HandleValidSubmit">
+    <div style="margin-bottom: 1rem;">
+        <label>Name:</label>
+        <InputText @bind-Value="newMeal.Name" class="input" />
+    </div>
+    <div style="margin-bottom: 1rem;">
+        <label>Desired Monthly:</label>
+        <InputNumber @bind-Value="newMeal.DesiredMonthly" class="input" />
+    </div>
+    <div style="margin-bottom: 1rem;">
+        <label>Ingredients:</label>
+        <div>
+            @if (ingredients != null && allUnits != null && ingredients.Count > 0)
+            {
+                @for (int i = 0; i < ingredients.Count; i++)
+                {
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <InputText @bind-Value="ingredients[i].Name" placeholder="Name" style="width: 120px;" />
+                        <InputNumber @bind-Value="ingredients[i].Amount" placeholder="Amount" style="width: 80px;" />
+                        <select @bind="ingredients[i].UnitOfMeasurement" style="width: 110px;">
+                            @foreach (var unit in allUnits)
+                            {
+                                <option value="@unit.ShortName">@unit.FullName (@unit.ShortName)</option>
+                            }
+                        </select>
+                        <button type="button" @onclick="() => RemoveIngredient(i)" disabled="@(ingredients.Count == 1)" style="color: #dc2626; background: none; border: none; font-size: 1.2em;">🗑️</button>
+                    </div>
+                }
+                <button type="button" @onclick="AddIngredient" style="color: #2563eb; background: none; border: none; font-size: 1.5em;">＋</button>
+            }
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Meal</button>
+</EditForm>
+
+@code {
+    private Meal newMeal;
+    private List<Ingredient> ingredients;
+    private List<UnitOfMeasurement> allUnits;
+
+    protected override void OnInitialized()
+    {
+        newMeal = new Meal { Ingredients = new List<Ingredient>() };
+        ingredients = new() { new Ingredient() };
+        allUnits = UnitOfMeasurement.AllUnits ?? new List<UnitOfMeasurement>();
+    }
+
+    private void AddIngredient()
+    {
+        ingredients.Add(new Ingredient());
+    }
+
+    private void RemoveIngredient(int index)
+    {
+        if (ingredients.Count > 1)
+            ingredients.RemoveAt(index);
+    }
+
+    private void HandleValidSubmit()
+    {
+        newMeal.Ingredients = ingredients.Select(i => new Ingredient
+        {
+            Name = i.Name,
+            Amount = i.Amount,
+            UnitOfMeasurement = i.UnitOfMeasurement
+        }).ToList();
+        // TODO: Save the meal (e.g., to a service or state)
+        // For now, just clear the form
+        newMeal = new Meal { Ingredients = new List<Ingredient>() };
+        ingredients = new() { new Ingredient() };
+    }
+} *@
