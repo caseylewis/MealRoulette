@@ -83,13 +83,45 @@
     <!-- Submit Button -->
     <section style="margin-top: 2rem;">
         <button @onclick="SubmitPlan" class="btn btn-success" disabled="@(WeeklyPlan.Count == 0)">Submit Plan</button>
-        @if (ShowSummary)
-        {
-            <div class="alert alert-info" style="margin-top: 1rem;">
-                <strong>Plan submitted!</strong> Your weekly meal plan has been saved.
-            </div>
-        }
     </section>
+
+    <!-- Grocery List Section -->
+    @if (ShowGroceryList)
+    {
+        <section style="margin-top: 2rem;">
+            <h4>Grocery List</h4>
+            @if (GroceryList.Count > 0)
+            {
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Ingredient</th>
+                            <th>Amount</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in GroceryList)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" @bind="item.Value.Checked" />
+                                </td>
+                                <td>@item.Key.Name</td>
+                                <td>@item.Value.TotalAmount</td>
+                                <td>@item.Key.Unit</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>No grocery items found.</p>
+            }
+        </section>
+    }
 </div>
 
 @code {
@@ -100,7 +132,7 @@
     private List<string> SelectedMealTypes = MealTypes.ToList();
     private Dictionary<string, Dictionary<string, Meal?>> WeeklyPlan = new();
     private bool IsRandomizing = false;
-    private bool ShowSummary = false;
+    private bool ShowGroceryList = false;
 
     protected override void OnInitialized()
     {
@@ -108,6 +140,15 @@
     }
 
     private List<Meal> Meals = new();
+
+    // Grocery list models
+    private Dictionary<GroceryListKey, GroceryListItem> GroceryList = new();
+    private record GroceryListKey(string Name, string Unit);
+    private class GroceryListItem
+    {
+        public double TotalAmount { get; set; }
+        public bool Checked { get; set; } = true;
+    }
 
     private void OnDayCheckboxChanged(ChangeEventArgs e, string day)
     {
@@ -141,7 +182,7 @@
             }
         }
         IsRandomizing = false;
-        ShowSummary = false;
+        ShowGroceryList = false;
     }
 
     private Meal? GetWeightedRandomMeal(Random rand, string mealType)
@@ -183,6 +224,32 @@
 
     private void SubmitPlan()
     {
-        ShowSummary = true;
+        BuildGroceryList();
+        ShowGroceryList = true;
+    }
+
+    private void BuildGroceryList()
+    {
+        GroceryList.Clear();
+        foreach (var day in WeeklyPlan.Keys)
+        {
+            foreach (var mealType in WeeklyPlan[day].Keys)
+            {
+                var meal = WeeklyPlan[day][mealType];
+                if (meal == null) continue;
+                foreach (var ingredient in meal.Ingredients)
+                {
+                    var key = new GroceryListKey(ingredient.Name, ingredient.UnitOfMeasurement);
+                    if (!GroceryList.ContainsKey(key))
+                    {
+                        GroceryList[key] = new GroceryListItem { TotalAmount = ingredient.Amount, Checked = true };
+                    }
+                    else
+                    {
+                        GroceryList[key].TotalAmount += ingredient.Amount;
+                    }
+                }
+            }
+        }
     }
 }

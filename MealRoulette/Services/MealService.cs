@@ -8,37 +8,37 @@ namespace MealRoulette.Services
         {
             new Meal { Name = "Spaghetti", DesiredMonthly = 3, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Pasta" },
-                new Ingredient { Name = "Tomato Sauce" },
-                new Ingredient { Name = "Meatballs" } } },
+                new Ingredient { Name = "Pasta", Amount = 8, UnitOfMeasurement = "oz" },
+                new Ingredient { Name = "Tomato Sauce", Amount = 1, UnitOfMeasurement = "cup" },
+                new Ingredient { Name = "Meatballs", Amount = 6, UnitOfMeasurement = "count" } } },
             new Meal { Name = "Tacos", DesiredMonthly = 2, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Tortillas" },
-                new Ingredient { Name = "Beef" },
-                new Ingredient { Name = "Cheese" } } },
+                new Ingredient { Name = "Tortillas", Amount = 3, UnitOfMeasurement = "piece" },
+                new Ingredient { Name = "Beef", Amount = 4, UnitOfMeasurement = "oz" },
+                new Ingredient { Name = "Cheese", Amount = 0.25, UnitOfMeasurement = "cup" } } },
             new Meal { Name = "Chicken Stir Fry", DesiredMonthly = 2, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Chicken" },
-                new Ingredient { Name = "Vegetables" },
-                new Ingredient { Name = "Soy Sauce" } } },
+                new Ingredient { Name = "Chicken", Amount = 6, UnitOfMeasurement = "oz" },
+                new Ingredient { Name = "Vegetables", Amount = 2, UnitOfMeasurement = "cup" },
+                new Ingredient { Name = "Soy Sauce", Amount = 2, UnitOfMeasurement = "tbsp" } } },
             new Meal { Name = "Pizza", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Dough" },
-                new Ingredient { Name = "Cheese" },
-                new Ingredient { Name = "Pepperoni" } } },
+                new Ingredient { Name = "Dough", Amount = 1, UnitOfMeasurement = "lb" },
+                new Ingredient { Name = "Cheese", Amount = 1, UnitOfMeasurement = "cup" },
+                new Ingredient { Name = "Pepperoni", Amount = 12, UnitOfMeasurement = "slice" } } },
             new Meal { Name = "Salmon Salad", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Salmon" },
-                new Ingredient { Name = "Lettuce" },
-                new Ingredient { Name = "Dressing" } } },
+                new Ingredient { Name = "Salmon", Amount = 4, UnitOfMeasurement = "oz" },
+                new Ingredient { Name = "Lettuce", Amount = 2, UnitOfMeasurement = "cup" },
+                new Ingredient { Name = "Dressing", Amount = 2, UnitOfMeasurement = "tbsp" } } },
             new Meal { Name = "Egg Sandwich", DesiredMonthly = 1, CanBeBreakfast=true, CanBeLunch=false, CanBeDinner=false,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Egg" },
-                new Ingredient { Name = "Pita" } } },
+                new Ingredient { Name = "Egg", Amount = 2, UnitOfMeasurement = "piece" },
+                new Ingredient { Name = "Pita", Amount = 1, UnitOfMeasurement = "piece" } } },
             new Meal { Name = "Turkey Sandwich", DesiredMonthly = 1, CanBeBreakfast=false, CanBeLunch=true, CanBeDinner=false,
                 Ingredients = new List<Ingredient> {
-                new Ingredient { Name = "Turkey" },
-                new Ingredient { Name = "Bread" } } },
+                new Ingredient { Name = "Turkey", Amount = 3, UnitOfMeasurement = "oz" },
+                new Ingredient { Name = "Bread", Amount = 2, UnitOfMeasurement = "slice" } } },
         };
 
         public IReadOnlyList<Meal> GetMeals() => _meals;

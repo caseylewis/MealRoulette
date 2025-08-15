@@ -43,5 +43,7 @@ public class UnitOfMeasurement
         new UnitOfMeasurement("Handful", "handful"),
         new UnitOfMeasurement("Knob", "knob"),
         new UnitOfMeasurement("Stick", "stick"),
+        new UnitOfMeasurement("Slice", "slice"),
+        new UnitOfMeasurement("Count", "count"),
     };
 }
