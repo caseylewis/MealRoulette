@@ -105,7 +105,7 @@ else
     {
         <div class="ingredient-row" style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
             <input class="form-control" style="width: 30%;" @bind="ingredient.Name" placeholder="Ingredient name" />
-            <input class="form-control" style="width: 20%;" type="number" step="0.01" @bind="ingredient.Amount" placeholder="Amount" />
+            <input class="form-control" style="width: 20%;" type="number" step="0.01" inputmode="decimal" @bind="ingredient.Amount" placeholder="Amount" />
             <select class="form-control" style="width: 20%;" @bind="ingredient.UnitOfMeasurement">
                 @foreach (var unit in Units)
                 {
