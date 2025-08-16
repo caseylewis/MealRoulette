@@ -41,6 +41,7 @@
 
 <div style="margin-top: 1.5rem;">
     <button class="btn btn-primary" @onclick="SubmitMeal">Submit</button>
+    <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/meals"))">Cancel</button>
 </div>
 
 @code {
