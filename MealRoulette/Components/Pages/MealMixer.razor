@@ -134,12 +134,13 @@
     private bool IsRandomizing = false;
     private bool ShowGroceryList = false;
 
-    protected override void OnInitialized()
-    {
-        Meals = MealService.GetMeals().ToList();
-    }
-
     private List<Meal> Meals = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var meals = await MealService.GetMealsAsync();
+        Meals = meals ?? new List<Meal>();
+    }
 
     // Grocery list models
     private Dictionary<GroceryListKey, GroceryListItem> GroceryList = new();

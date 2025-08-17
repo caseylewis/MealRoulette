@@ -1,5 +1,6 @@
 ﻿using MealRoulette.Services;
 using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace MealRoulette
 {
@@ -16,6 +17,10 @@ namespace MealRoulette
                 });
 
             builder.Services.AddMauiBlazorWebView();
+
+            // Register MealDatabase as singleton
+            string dbPath = Path.Combine(FileSystem.AppDataDirectory, "meals.db3");
+            builder.Services.AddSingleton(x => new MealDatabase(dbPath));
             builder.Services.AddSingleton<MealService>();
 
 #if DEBUG

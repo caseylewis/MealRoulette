@@ -1,10 +1,13 @@
 using MealRoulette.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MealRoulette.Services
 {
     public class MealService
     {
-        private readonly List<Meal> _meals = new()
+        private readonly MealDatabase _database;
+        private readonly List<Meal> _default_meals = new()
         {
             new Meal { Name = "Spaghetti", DesiredMonthly = 3, CanBeBreakfast=false, CanBeLunch=false, CanBeDinner=true,
                 Ingredients = new List<Ingredient> {
@@ -41,32 +44,30 @@ namespace MealRoulette.Services
                 new Ingredient { Name = "Bread", Amount = 2, UnitOfMeasurement = "slice" } } },
         };
 
-        public IReadOnlyList<Meal> GetMeals() => _meals;
-
-        public void AddMeal(Meal meal)
+        public MealService(MealDatabase database)
         {
-            _meals.Add(meal);
+            _database = database;
         }
 
-        public bool UpdateMealByName(string name, Meal updatedMeal)
+        public MealService(string dbPath)
         {
-            var index = _meals.FindIndex(m => m.Name == name);
-            if (index == -1) return false;
-            _meals[index] = updatedMeal;
-            return true;
+            _database = new MealDatabase(dbPath, _default_meals);
         }
 
-        public bool DeleteMealByName(string name)
+        public Task<List<Meal>> GetMealsAsync() => _database.GetMealsAsync();
+        public Task<Meal> GetMealByNameAsync(string name) => _database.GetMealByNameAsync(name);
+        public async Task<int> AddMealAsync(Meal meal, List<Ingredient> ingredients)
         {
-            var meal = _meals.FirstOrDefault(m => m.Name == name);
-            if (meal == null) return false;
-            _meals.Remove(meal);
-            return true;
+            meal.Ingredients = ingredients;
+            return await _database.SaveMealAsync(meal);
         }
-
-        public Meal? GetMealByName(string name)
+        public async Task<int> UpdateMealAsync(Meal meal)
         {
-            return _meals.FirstOrDefault(m => m.Name == name);
+            return await _database.SaveMealAsync(meal);
+        }
+        public async Task<int> DeleteMealAsync(Meal meal)
+        {
+            return await _database.DeleteMealAsync(meal);
         }
     }
 }

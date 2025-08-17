@@ -17,9 +17,9 @@
     private static readonly List<string> Units = UnitOfMeasurement.AllUnits.Select(u => u.ShortName).ToList();
     private bool notFound = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        meal = MealService.GetMealByName(MealName);
+        meal = await MealService.GetMealByNameAsync(MealName);
         if (meal == null)
         {
             notFound = true;
@@ -49,7 +49,7 @@
             ingredients.Remove(ingredient);
     }
 
-    private void UpdateMeal()
+    private async Task UpdateMeal()
     {
         var updatedMeal = new Meal
         {
@@ -65,13 +65,16 @@
                 UnitOfMeasurement = i.UnitOfMeasurement
             }).ToList()
         };
-        MealService.UpdateMealByName(MealName, updatedMeal);
+        await MealService.UpdateMealAsync(updatedMeal);
         Navigation.NavigateTo("/meals", true);
     }
 
-    private void DeleteMeal()
+    private async Task DeleteMeal()
     {
-        MealService.DeleteMealByName(MealName);
+        if (meal != null)
+        {
+            await MealService.DeleteMealAsync(meal);
+        }
         Navigation.NavigateTo("/meals", true);
     }
 }

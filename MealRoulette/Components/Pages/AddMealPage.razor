@@ -65,7 +65,7 @@
             ingredients.Remove(ingredient);
     }
 
-    private void SubmitMeal()
+    private async Task SubmitMeal()
     {
         var meal = new Meal
         {
@@ -81,7 +81,7 @@
                 UnitOfMeasurement = i.UnitOfMeasurement
             }).ToList()
         };
-        MealService.AddMeal(meal);
+        await MealService.AddMealAsync(meal, meal.Ingredients);
         Navigation.NavigateTo("/meals", true);
     }
 }

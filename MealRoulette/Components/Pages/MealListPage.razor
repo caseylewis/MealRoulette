@@ -33,9 +33,10 @@
 @code {
 	private List<Meal> meals = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        meals = MealService.GetMeals().ToList();
+        var result = await MealService.GetMealsAsync();
+        meals = result ?? new List<Meal>();
     }
 
     private void GoToAddMeal()
