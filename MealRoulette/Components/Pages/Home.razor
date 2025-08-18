@@ -1,5 +1,83 @@
 ﻿@page "/"
+@using MealRoulette.Models
+@inject NavigationManager Navigation
+@inject MealRoulette.Services.MealService MealService
 
-<h1>Hello, world!</h1>
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Meal Roulette</h1>
+        <p class="tagline">Spin up weekly meal plans, save time, and eat better.</p>
+        <div class="cta">
+            <button class="home-btn primary" @onclick="StartMixer">Start Meal Mixer</button>
+            <button class="home-btn" @onclick="BrowseMeals">Browse Meals</button>
+            <button class="home-btn ghost" @onclick="AddMeal">Add Meal</button>
+        </div>
+    </div>
+</section>
 
-Welcome to your new app.
+<!-- Features -->
+<section class="features">
+    <div class="feature">
+        <div class="icon">🎲</div>
+        <h3>Smart Randomizer</h3>
+        <p>Spin balanced meal plans across days and meal types.</p>
+    </div>
+    <div class="feature">
+        <div class="icon">🛒</div>
+        <h3>Auto Grocery List</h3>
+        <p>Aggregate ingredients into a ready-to-shop list.</p>
+    </div>
+    <div class="feature">
+        <div class="icon">⚡</div>
+        <h3>Quick Setup</h3>
+        <p>Use defaults or add your own meals in seconds.</p>
+    </div>
+</section>
+
+<!-- Recently Added / Popular Meals -->
+@if (recentMeals.Count > 0)
+{
+    <section class="recent">
+        <h2>Popular Meals</h2>
+        <div class="cards">
+            @foreach (var meal in recentMeals)
+            {
+                <div class="card" @onclick="() => GoToEditMeal(meal.Name)">
+                    <div class="card-title">
+                        <h4>@meal.Name</h4>
+                        <span class="badge">@meal.DesiredMonthly x/mo</span>
+                    </div>
+                    <div class="ingredients">
+                        @foreach (var ing in meal.Ingredients)
+                        {
+                            <span class="chip">@ing.Name</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Footer CTA -->
+<section class="footer-cta">
+    <h3>Ready to spin your first plan?</h3>
+    <button class="home-btn primary" @onclick="StartMixer">Let's Go</button>
+</section>
+
+@code {
+    private List<Meal> recentMeals = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load a few meals to showcase on the landing page
+        var meals = await MealService.GetMealsAsync();
+        recentMeals = (meals ?? new()).OrderByDescending(m => m.DesiredMonthly).Take(3).ToList();
+    }
+
+    private void StartMixer() => Navigation.NavigateTo("/mealmixer");
+    private void BrowseMeals() => Navigation.NavigateTo("/meals");
+    private void AddMeal() => Navigation.NavigateTo("/add-meal");
+    private void GoToEditMeal(string mealName) => Navigation.NavigateTo($"/edit-meal/{Uri.EscapeDataString(mealName)}");
+}
