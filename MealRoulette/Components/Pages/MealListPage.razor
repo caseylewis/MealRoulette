@@ -5,6 +5,8 @@
 
 <h3>Meal List</h3>
 
+<button class="btn btn-secondary" @onclick="AddDefaultMeals" style="margin-bottom: 1rem;">Add Default Meals</button>
+
 <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
 <!-- Each meal needs to be editable. When clicked, it should go to a page that is similar to the AddMealPage, except it allows editing the existing meal, with an option to delete the meal as well. -->
 @foreach (var meal in meals)
@@ -31,7 +33,8 @@
 </button>
 
 @code {
-	private List<Meal> meals = new();
+    private List<Meal> meals = new();
+    private bool isAddingDefaults = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,5 +50,23 @@
     private void GoToEditMeal(string mealName)
     {
         Navigation.NavigateTo($"/edit-meal/{Uri.EscapeDataString(mealName)}");
+    }
+
+    private async Task AddDefaultMeals()
+    {
+        isAddingDefaults = true;
+        var defaultMeals = MealService.GetDefaultMeals();
+        var existingMeals = (await MealService.GetMealsAsync()).Select(m => m.Name).ToHashSet();
+        foreach (var meal in defaultMeals)
+        {
+            if (!existingMeals.Contains(meal.Name))
+            {
+                await MealService.AddMealAsync(meal, meal.Ingredients);
+            }
+        }
+        var result = await MealService.GetMealsAsync();
+        meals = result ?? new List<Meal>();
+        isAddingDefaults = false;
+        StateHasChanged();
     }
 }

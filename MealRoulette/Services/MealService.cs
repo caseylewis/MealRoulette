@@ -1,6 +1,7 @@
 using MealRoulette.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace MealRoulette.Services
 {
@@ -49,17 +50,28 @@ namespace MealRoulette.Services
             _database = database;
         }
 
-        public MealService(string dbPath)
-        {
-            _database = new MealDatabase(dbPath, _default_meals);
-        }
+        //public MealService(string dbPath)
+        //{
+        //    _database = new MealDatabase(dbPath, _default_meals);
+        //}
 
         public Task<List<Meal>> GetMealsAsync() => _database.GetMealsAsync();
         public Task<Meal> GetMealByNameAsync(string name) => _database.GetMealByNameAsync(name);
         public async Task<int> AddMealAsync(Meal meal, List<Ingredient> ingredients)
         {
             meal.Ingredients = ingredients;
-            return await _database.SaveMealAsync(meal);
+            // Save the meal first
+            var result = await _database.SaveMealAsync(meal);
+            // Save all ingredients with correct MealName
+            if (ingredients != null)
+            {
+                foreach (var ingredient in ingredients)
+                {
+                    ingredient.MealName = meal.Name;
+                    await _database.SaveIngredientAsync(ingredient);
+                }
+            }
+            return result;
         }
         public async Task<int> UpdateMealAsync(Meal meal)
         {
@@ -68,6 +80,26 @@ namespace MealRoulette.Services
         public async Task<int> DeleteMealAsync(Meal meal)
         {
             return await _database.DeleteMealAsync(meal);
+        }
+        public List<Meal> GetDefaultMeals()
+        {
+            // Return a deep copy to avoid accidental mutation and let DB assign unique Ids
+            return _default_meals.Select(m => new Meal
+            {
+                Name = m.Name,
+                DesiredMonthly = m.DesiredMonthly,
+                CanBeBreakfast = m.CanBeBreakfast,
+                CanBeLunch = m.CanBeLunch,
+                CanBeDinner = m.CanBeDinner,
+                Ingredients = m.Ingredients?.Select(i => new Ingredient
+                {
+                    // Do NOT set Id, let SQLite auto-increment
+                    Name = i.Name,
+                    Amount = i.Amount,
+                    UnitOfMeasurement = i.UnitOfMeasurement,
+                    MealName = m.Name
+                }).ToList() ?? new List<Ingredient>()
+            }).ToList();
         }
     }
 }

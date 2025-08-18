@@ -6,36 +6,77 @@ using System.Linq;
 
 namespace MealRoulette.Services
 {
+    [Table("DbMeta")]
+    public class DbMeta
+    {
+        [PrimaryKey]
+        public string Key { get; set; }
+        public string Value { get; set; }
+    }
+
     public class MealDatabase
     {
         private readonly SQLiteAsyncConnection _database;
+        private const int CurrentDbVersion = 1; // Increment this when you change schema
+        private const string VersionKey = "DbVersion";
+        private bool _initialized = false;
 
-        public MealDatabase(string dbPath, IEnumerable<Meal> defaultMeals = null)
+        public MealDatabase(string dbPath)
         {
             _database = new SQLiteAsyncConnection(dbPath);
-            _database.CreateTableAsync<Meal>().Wait();
-            _database.CreateTableAsync<Ingredient>().Wait();
+        }
+
+        public async Task InitializeAsync(IEnumerable<Meal> defaultMeals = null)
+        {
+            if (_initialized) return;
+            _initialized = true;
+            await _database.CreateTableAsync<Meal>();
+            await _database.CreateTableAsync<Ingredient>();
+            await _database.CreateTableAsync<DbMeta>();
+
+            // Migration logic
+            var version = await GetDbVersionAsync();
+            if (version < CurrentDbVersion)
+            {
+                await MigrateDatabase(version, CurrentDbVersion);
+                await SetDbVersionAsync(CurrentDbVersion);
+            }
 
             // Seed default meals if database is empty
-            if (defaultMeals != null)
+            var mealCount = await _database.Table<Meal>().CountAsync();
+            if (defaultMeals != null && mealCount == 0)
             {
-                var mealCount = _database.Table<Meal>().CountAsync().Result;
-                if (mealCount == 0)
+                foreach (var meal in defaultMeals)
                 {
-                    foreach (var meal in defaultMeals)
+                    await _database.InsertAsync(meal);
+                    if (meal.Ingredients != null)
                     {
-                        _database.InsertAsync(meal).Wait();
-                        if (meal.Ingredients != null)
+                        foreach (var ingredient in meal.Ingredients)
                         {
-                            foreach (var ingredient in meal.Ingredients)
-                            {
-                                ingredient.MealName = meal.Name;
-                                _database.InsertAsync(ingredient).Wait();
-                            }
+                            ingredient.MealName = meal.Name;
+                            ingredient.Id = 0; // ensure auto-increment
+                            await _database.InsertAsync(ingredient);
                         }
                     }
                 }
             }
+        }
+
+        private async Task<int> GetDbVersionAsync()
+        {
+            var meta = await _database.Table<DbMeta>().Where(m => m.Key == VersionKey).FirstOrDefaultAsync();
+            return meta != null && int.TryParse(meta.Value, out var v) ? v : 0;
+        }
+
+        private async Task SetDbVersionAsync(int version)
+        {
+            var meta = new DbMeta { Key = VersionKey, Value = version.ToString() };
+            await _database.InsertOrReplaceAsync(meta);
+        }
+
+        private async Task MigrateDatabase(int oldVersion, int newVersion)
+        {
+            // Add migration steps here as you update your schema in the future
         }
 
         public async Task<List<Meal>> GetMealsAsync()
@@ -62,19 +103,22 @@ namespace MealRoulette.Services
         {
             // Save meal
             var result = await _database.InsertOrReplaceAsync(meal);
+
             // Remove old ingredients
             var oldIngredients = await GetIngredientsForMealAsync(meal.Name);
             foreach (var ing in oldIngredients)
             {
                 await _database.DeleteAsync(ing);
             }
-            // Save new ingredients
+
+            // Save new ingredients (always insert fresh rows)
             if (meal.Ingredients != null)
             {
                 foreach (var ingredient in meal.Ingredients)
                 {
                     ingredient.MealName = meal.Name;
-                    await _database.InsertOrReplaceAsync(ingredient);
+                    ingredient.Id = 0; // reset so SQLite assigns a new Id
+                    await _database.InsertAsync(ingredient);
                 }
             }
             return result;
@@ -99,6 +143,12 @@ namespace MealRoulette.Services
 
         public Task<int> SaveIngredientAsync(Ingredient ingredient)
         {
+            // For direct saves elsewhere, prefer Insert for new items
+            if (ingredient.Id == 0)
+            {
+                ingredient.Id = 0;
+                return _database.InsertAsync(ingredient);
+            }
             return _database.InsertOrReplaceAsync(ingredient);
         }
     }
