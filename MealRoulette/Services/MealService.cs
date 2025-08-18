@@ -50,37 +50,15 @@ namespace MealRoulette.Services
             _database = database;
         }
 
-        //public MealService(string dbPath)
-        //{
-        //    _database = new MealDatabase(dbPath, _default_meals);
-        //}
-
         public Task<List<Meal>> GetMealsAsync() => _database.GetMealsAsync();
         public Task<Meal> GetMealByNameAsync(string name) => _database.GetMealByNameAsync(name);
-        public async Task<int> AddMealAsync(Meal meal, List<Ingredient> ingredients)
+        public Task<int> AddMealAsync(Meal meal, List<Ingredient> ingredients)
         {
             meal.Ingredients = ingredients;
-            // Save the meal first
-            var result = await _database.SaveMealAsync(meal);
-            // Save all ingredients with correct MealName
-            if (ingredients != null)
-            {
-                foreach (var ingredient in ingredients)
-                {
-                    ingredient.MealName = meal.Name;
-                    await _database.SaveIngredientAsync(ingredient);
-                }
-            }
-            return result;
+            return _database.SaveMealAsync(meal);
         }
-        public async Task<int> UpdateMealAsync(Meal meal)
-        {
-            return await _database.SaveMealAsync(meal);
-        }
-        public async Task<int> DeleteMealAsync(Meal meal)
-        {
-            return await _database.DeleteMealAsync(meal);
-        }
+        public Task<int> UpdateMealAsync(Meal meal) => _database.SaveMealAsync(meal);
+        public Task<int> DeleteMealAsync(Meal meal) => _database.DeleteMealAsync(meal);
         public List<Meal> GetDefaultMeals()
         {
             // Return a deep copy to avoid accidental mutation and let DB assign unique Ids
