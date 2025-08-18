@@ -17,7 +17,7 @@ namespace MealRoulette.Services
     public class MealDatabase
     {
         private readonly SQLiteAsyncConnection _database;
-        private const int CurrentDbVersion = 1; // Increment this when you change schema
+        private const int CurrentDbVersion = 2; // bump version to trigger migration
         private const string VersionKey = "DbVersion";
         private bool _initialized = false;
 
@@ -30,6 +30,8 @@ namespace MealRoulette.Services
         {
             if (_initialized) return;
             _initialized = true;
+
+            // Ensure tables exist (will no-op if they already exist)
             await _database.CreateTableAsync<Meal>();
             await _database.CreateTableAsync<Ingredient>();
             await _database.CreateTableAsync<DbMeta>();
@@ -76,7 +78,28 @@ namespace MealRoulette.Services
 
         private async Task MigrateDatabase(int oldVersion, int newVersion)
         {
-            // Add migration steps here as you update your schema in the future
+            // Example migration to ensure Ingredients has an auto-increment PK Id and allows multiple rows per meal
+            if (oldVersion < 2)
+            {
+                // Inspect current Ingredients table
+                var cols = await _database.GetTableInfoAsync("Ingredients");
+                var hasId = cols.Any(c => c.Name == nameof(Ingredient.Id));
+
+                if (!hasId)
+                {
+                    // Rebuild Ingredients table without losing data
+                    await _database.ExecuteAsync("CREATE TABLE IF NOT EXISTS Ingredients_New (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Amount REAL, UnitOfMeasurement TEXT, MealName TEXT)");
+
+                    // If old Ingredients exists, copy data
+                    if (cols?.Count > 0)
+                    {
+                        await _database.ExecuteAsync("INSERT INTO Ingredients_New (Name, Amount, UnitOfMeasurement, MealName) SELECT Name, Amount, UnitOfMeasurement, MealName FROM Ingredients");
+                        await _database.ExecuteAsync("DROP TABLE IF EXISTS Ingredients");
+                    }
+
+                    await _database.ExecuteAsync("ALTER TABLE Ingredients_New RENAME TO Ingredients");
+                }
+            }
         }
 
         public async Task<List<Meal>> GetMealsAsync()
@@ -110,7 +133,7 @@ namespace MealRoulette.Services
             {
                 await _database.DeleteAsync(ing);
             }
-
+            
             // Save new ingredients (always insert fresh rows)
             if (meal.Ingredients != null)
             {

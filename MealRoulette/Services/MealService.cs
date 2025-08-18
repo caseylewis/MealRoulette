@@ -50,6 +50,9 @@ namespace MealRoulette.Services
             _database = database;
         }
 
+        // Ensure DB is initialized and migrated; seed defaults if empty
+        public Task InitializeAsync() => _database.InitializeAsync(_default_meals);
+
         public Task<List<Meal>> GetMealsAsync() => _database.GetMealsAsync();
         public Task<Meal> GetMealByNameAsync(string name) => _database.GetMealByNameAsync(name);
         public Task<int> AddMealAsync(Meal meal, List<Ingredient> ingredients)
@@ -59,6 +62,7 @@ namespace MealRoulette.Services
         }
         public Task<int> UpdateMealAsync(Meal meal) => _database.SaveMealAsync(meal);
         public Task<int> DeleteMealAsync(Meal meal) => _database.DeleteMealAsync(meal);
+
         public List<Meal> GetDefaultMeals()
         {
             // Return a deep copy to avoid accidental mutation and let DB assign unique Ids
