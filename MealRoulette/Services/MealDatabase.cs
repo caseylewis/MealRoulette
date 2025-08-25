@@ -3,6 +3,7 @@ using MealRoulette.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Text.Json;
 
 namespace MealRoulette.Services
 {
@@ -17,8 +18,10 @@ namespace MealRoulette.Services
     public class MealDatabase
     {
         private readonly SQLiteAsyncConnection _database;
-        private const int CurrentDbVersion = 2; // bump version to trigger migration
+        private const int CurrentDbVersion = 3; // bump version for MaxTimesPerWeek migration
         private const string VersionKey = "DbVersion";
+        private const string CurrentWeekKey = "CurrentWeekPlan";
+        private const string CurrentWeekGroceryKey = "CurrentWeekGrocery";
         private bool _initialized = false;
 
         public MealDatabase(string dbPath)
@@ -100,6 +103,21 @@ namespace MealRoulette.Services
                     await _database.ExecuteAsync("ALTER TABLE Ingredients_New RENAME TO Ingredients");
                 }
             }
+
+            if (oldVersion < 3)
+            {
+                // Handle Meals column rename from DesiredMonthly to MaxTimesPerWeek if needed
+                var mealCols = await _database.GetTableInfoAsync("Meals");
+                var hasDesiredMonthly = mealCols.Any(c => c.Name == "DesiredMonthly");
+                var hasMaxPerWeek = mealCols.Any(c => c.Name == "MaxTimesPerWeek");
+                if (hasDesiredMonthly && !hasMaxPerWeek)
+                {
+                    // Add new column and copy data
+                    await _database.ExecuteAsync("ALTER TABLE Meals ADD COLUMN MaxTimesPerWeek INTEGER");
+                    await _database.ExecuteAsync("UPDATE Meals SET MaxTimesPerWeek = COALESCE(DesiredMonthly, 1)");
+                    // Optionally leave old column; SQLite doesn't support drop column easily without table rebuild
+                }
+            }
         }
 
         public async Task<List<Meal>> GetMealsAsync()
@@ -174,5 +192,55 @@ namespace MealRoulette.Services
             }
             return _database.InsertOrReplaceAsync(ingredient);
         }
+
+        // --- Current week persistence ---
+        public async Task SaveCurrentWeekAsync(WeeklyPlan plan)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(plan);
+            await _database.InsertOrReplaceAsync(new DbMeta { Key = CurrentWeekKey, Value = json });
+        }
+
+        public async Task<WeeklyPlan> GetCurrentWeekAsync()
+        {
+            var meta = await _database.Table<DbMeta>().Where(m => m.Key == CurrentWeekKey).FirstOrDefaultAsync();
+            if (meta == null || string.IsNullOrWhiteSpace(meta.Value)) return null;
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<WeeklyPlan>(meta.Value);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task SaveCurrentWeekGroceryAsync(Dictionary<string, GroceryAggregateItem> items)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(items);
+            await _database.InsertOrReplaceAsync(new DbMeta { Key = CurrentWeekGroceryKey, Value = json });
+        }
+
+        public async Task<Dictionary<string, GroceryAggregateItem>> GetCurrentWeekGroceryAsync()
+        {
+            var meta = await _database.Table<DbMeta>().Where(m => m.Key == CurrentWeekGroceryKey).FirstOrDefaultAsync();
+            if (meta == null || string.IsNullOrWhiteSpace(meta.Value)) return new();
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, GroceryAggregateItem>>(meta.Value) ?? new();
+            }
+            catch
+            {
+                return new();
+            }
+        }
+    }
+
+    // Lightweight DTO for grocery storage
+    public class GroceryAggregateItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
+        public double TotalAmount { get; set; }
+        public bool Checked { get; set; } = true;
     }
 }

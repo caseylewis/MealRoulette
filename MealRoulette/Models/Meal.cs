@@ -10,7 +10,7 @@ public class Meal
     // Ingredients will be handled separately in the DB
     [Ignore]
     public List<Ingredient> Ingredients { get; set; } = new();
-    public int DesiredMonthly { get; set; }
+    public int MaxTimesPerWeek { get; set; } = 1;
     public bool CanBeBreakfast { get; set; } = false;
     public bool CanBeLunch { get; set; } = false;
     public bool CanBeDinner { get; set; } = false;

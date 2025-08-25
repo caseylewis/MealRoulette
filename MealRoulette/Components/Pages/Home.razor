@@ -46,7 +46,7 @@
                 <div class="card" @onclick="() => GoToEditMeal(meal.Name)">
                     <div class="card-title">
                         <h4>@meal.Name</h4>
-                        <span class="badge">@meal.DesiredMonthly x/mo</span>
+                        <span class="badge">@meal.MaxTimesPerWeek x/wk</span>
                     </div>
                     <div class="ingredients">
                         @foreach (var ing in meal.Ingredients)
@@ -73,7 +73,7 @@
     {
         // Load a few meals to showcase on the landing page
         var meals = await MealService.GetMealsAsync();
-        recentMeals = (meals ?? new()).OrderByDescending(m => m.DesiredMonthly).Take(3).ToList();
+        recentMeals = (meals ?? new()).OrderByDescending(m => m.MaxTimesPerWeek).Take(3).ToList();
     }
 
     private void StartMixer() => Navigation.NavigateTo("/mealmixer");

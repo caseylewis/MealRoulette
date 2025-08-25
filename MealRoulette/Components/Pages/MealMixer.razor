@@ -1,6 +1,8 @@
 ﻿@page "/mealmixer"
 @using MealRoulette.Models
+@using MealRoulette.Services
 @inject MealRoulette.Services.MealService MealService
+@inject NavigationManager Navigation
 
 <h3>Meal Mixer</h3>
 
@@ -81,8 +83,9 @@
     </section>
 
     <!-- Submit Button -->
-    <section style="margin-top: 2rem;">
-        <button @onclick="SubmitPlan" class="btn btn-success" disabled="@(WeeklyPlan.Count == 0)">Submit Plan</button>
+    <section style="margin-top: 2rem; display:flex; gap: .5rem; align-items:center;">
+        <button @onclick="SubmitPlan" class="btn btn-success" disabled="@(WeeklyPlan.Count == 0)">Apply to Current Week</button>
+        <button class="btn btn-secondary" @onclick="GoToCurrentWeek">View Current Week</button>
     </section>
 
     <!-- Grocery List Section -->
@@ -135,6 +138,7 @@
     private bool ShowGroceryList = false;
 
     private List<Meal> Meals = new();
+    private Dictionary<string, int> _mealUsage = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -173,20 +177,21 @@
     {
         IsRandomizing = true;
         WeeklyPlan.Clear();
+        _mealUsage.Clear();
         var rand = new Random();
         foreach (var day in SelectedDays)
         {
             WeeklyPlan[day] = new Dictionary<string, Meal?>();
             foreach (var mealType in SelectedMealTypes)
             {
-                WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand, mealType);
+                WeeklyPlan[day][mealType] = GetRandomMealWithCap(rand, mealType);
             }
         }
         IsRandomizing = false;
         ShowGroceryList = false;
     }
 
-    private Meal? GetWeightedRandomMeal(Random rand, string mealType)
+    private Meal? GetRandomMealWithCap(Random rand, string mealType)
     {
         if (Meals.Count == 0) return null;
         IEnumerable<Meal> filteredMeals = mealType switch
@@ -196,16 +201,20 @@
             "Dinner" => Meals.Where(m => m.CanBeDinner),
             _ => Enumerable.Empty<Meal>()
         };
-        var weightedList = new List<Meal>();
-        foreach (var meal in filteredMeals)
+
+        var candidates = filteredMeals
+            .Where(m => _mealUsage.GetValueOrDefault(m.Name, 0) < (m.MaxTimesPerWeek <= 0 ? 0 : m.MaxTimesPerWeek))
+            .ToList();
+
+        if (candidates.Count == 0)
         {
-            for (int i = 0; i < meal.DesiredMonthly; i++)
-            {
-                weightedList.Add(meal);
-            }
+            // No candidate within cap; return null to show '-'
+            return null;
         }
-        if (weightedList.Count == 0) return null;
-        return weightedList[rand.Next(weightedList.Count)];
+
+        var meal = candidates[rand.Next(candidates.Count)];
+        _mealUsage[meal.Name] = _mealUsage.GetValueOrDefault(meal.Name, 0) + 1;
+        return meal;
     }
 
     private void ReplaceMeal(string day, string mealType)
@@ -218,14 +227,22 @@
         {
             WeeklyPlan[day][mealType] = null;
         }
+        var current = WeeklyPlan[day][mealType];
+        if (current != null)
+        {
+            // decrement usage of the current one
+            var name = current.Name;
+            if (_mealUsage.ContainsKey(name) && _mealUsage[name] > 0) _mealUsage[name]--;
+        }
         var rand = new Random();
-        WeeklyPlan[day][mealType] = GetWeightedRandomMeal(rand, mealType);
+        WeeklyPlan[day][mealType] = GetRandomMealWithCap(rand, mealType);
         StateHasChanged();
     }
 
-    private void SubmitPlan()
+    private async Task SubmitPlan()
     {
         BuildGroceryList();
+        await PersistCurrentWeekAsync();
         ShowGroceryList = true;
     }
 
@@ -253,4 +270,48 @@
             }
         }
     }
+
+    private async Task PersistCurrentWeekAsync()
+    {
+        var plan = new WeeklyPlan
+        {
+            SelectedDays = SelectedDays.ToList(),
+            SelectedMealTypes = SelectedMealTypes.ToList(),
+            Entries = new()
+        };
+        foreach (var day in SelectedDays)
+        {
+            if (!WeeklyPlan.TryGetValue(day, out var mealsForDay)) continue;
+            foreach (var mealType in SelectedMealTypes)
+            {
+                if (mealsForDay.TryGetValue(mealType, out var meal) && meal != null)
+                {
+                    plan.Entries.Add(new WeeklyPlanEntry
+                    {
+                        Day = day,
+                        MealType = mealType,
+                        MealName = meal.Name
+                    });
+                }
+            }
+        }
+        await MealService.SaveCurrentWeekAsync(plan);
+
+        // Convert grocery list to storable dictionary
+        var grocery = new Dictionary<string, GroceryAggregateItem>();
+        foreach (var kvp in GroceryList)
+        {
+            var key = $"{kvp.Key.Name}|{kvp.Key.Unit}";
+            grocery[key] = new GroceryAggregateItem
+            {
+                Name = kvp.Key.Name,
+                Unit = kvp.Key.Unit,
+                TotalAmount = kvp.Value.TotalAmount,
+                Checked = kvp.Value.Checked
+            };
+        }
+        await MealService.SaveCurrentWeekGroceryAsync(grocery);
+    }
+
+    private void GoToCurrentWeek() => Navigation.NavigateTo("/current-week");
 }

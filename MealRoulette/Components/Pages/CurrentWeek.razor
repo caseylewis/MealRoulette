@@ -1,0 +1,115 @@
+@page "/current-week"
+@using MealRoulette.Models
+@using MealRoulette.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject MealRoulette.Services.MealService MealService
+
+<h3>Current Week</h3>
+
+@if (plan == null || plan.Entries.Count == 0)
+{
+    <p>No current week set. Go to the Meal Mixer to create one.</p>
+}
+else
+{
+    <section style="margin-top: 1rem;">
+        <h4>Weekly Plan</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    @foreach (var mealType in plan.SelectedMealTypes)
+                    {
+                        <th>@mealType</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var day in plan.SelectedDays)
+                {
+                    <tr>
+                        <td>@day</td>
+                        @foreach (var mealType in plan.SelectedMealTypes)
+                        {
+                            <td>
+                                @{ var entry = plan.Entries.FirstOrDefault(e => e.Day == day && e.MealType == mealType); }
+                                @if (entry != null)
+                                {
+                                    <span>@entry.MealName</span>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <small>Saved @plan.SavedAt.ToLocalTime()</small>
+    </section>
+
+    <section style="margin-top: 2rem;">
+        <div style="display:flex; align-items:center; gap:.5rem;">
+            <h4 style="margin:0;">Grocery List</h4>
+            <button class="btn btn-secondary" @onclick="ToggleAll">@((allChecked?"Uncheck All":"Check All"))</button>
+        </div>
+        @if (grocery.Count > 0)
+        {
+            <table class="table table-bordered" style="margin-top:.5rem;">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Ingredient</th>
+                        <th>Amount</th>
+                        <th>Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in grocery)
+                    {
+                        <tr>
+                            <td>
+                                <InputCheckbox @bind-Value="item.Value.Checked" @bind-Value:after="PersistGroceryAsync" />
+                            </td>
+                            <td>@item.Value.Name</td>
+                            <td>@item.Value.TotalAmount</td>
+                            <td>@item.Value.Unit</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No grocery items found.</p>
+        }
+    </section>
+}
+
+@code {
+    private WeeklyPlan? plan;
+    private Dictionary<string, GroceryAggregateItem> grocery = new();
+    private bool allChecked = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        plan = await MealService.GetCurrentWeekAsync();
+        grocery = await MealService.GetCurrentWeekGroceryAsync();
+        allChecked = grocery.Values.All(g => g.Checked);
+    }
+
+    private async Task ToggleAll()
+    {
+        allChecked = !allChecked;
+        foreach (var g in grocery.Values)
+            g.Checked = allChecked;
+        await PersistGroceryAsync();
+    }
+
+    private Task PersistGroceryAsync()
+    {
+        return MealService.SaveCurrentWeekGroceryAsync(grocery);
+    }
+}

@@ -9,7 +9,7 @@
 
     private Meal? meal;
     private string mealName = string.Empty;
-    private int mealFrequency = 1;
+    private int maxPerWeek = 1;
     private bool canBeBreakfast = false;
     private bool canBeLunch = false;
     private bool canBeDinner = false;
@@ -26,7 +26,7 @@
             return;
         }
         mealName = meal.Name;
-        mealFrequency = meal.DesiredMonthly;
+        maxPerWeek = meal.MaxTimesPerWeek;
         canBeBreakfast = meal.CanBeBreakfast;
         canBeLunch = meal.CanBeLunch;
         canBeDinner = meal.CanBeDinner;
@@ -54,7 +54,7 @@
         var updatedMeal = new Meal
         {
             Name = mealName,
-            DesiredMonthly = mealFrequency,
+            MaxTimesPerWeek = maxPerWeek,
             CanBeBreakfast = canBeBreakfast,
             CanBeLunch = canBeLunch,
             CanBeDinner = canBeDinner,
@@ -92,8 +92,8 @@ else
         <input class="form-control" @bind="mealName" placeholder="Enter meal name" />
     </div>
     <div class="form-group">
-        <label>Meal Frequency (per month):</label>
-        <input class="form-control" type="number" @bind="mealFrequency" min="1" />
+        <label>Max Times Per Week:</label>
+        <input class="form-control" type="number" @bind="maxPerWeek" min="0" />
     </div>
     <div class="form-group">
         <label>Meal Types:</label>
