@@ -1,7 +1,9 @@
 ﻿@using MealRoulette.Components.Layout
 @using Microsoft.AspNetCore.Components.Routing
+@inject MealRoulette.Services.AccountService AccountService
+@inject NavigationManager Navigation
 
-<Router AppAssembly="typeof(App).Assembly">
+<Router AppAssembly="typeof(App).Assembly" OnNavigateAsync="GuardAuthAsync">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
     </Found>
@@ -11,3 +13,20 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    private async Task GuardAuthAsync(NavigationContext context)
+    {
+        var path = (context.Path ?? string.Empty).Trim('/').ToLowerInvariant();
+        // Allow the account page itself
+        if (path.StartsWith("account")) return;
+
+        // Check if a household is selected; if not, redirect to /account
+        var householdId = await AccountService.GetCurrentHouseholdIdAsync();
+        if (householdId is null)
+        {
+            // Avoid redirect loop by replacing history
+            Navigation.NavigateTo("/account", replace: true);
+        }
+    }
+}

@@ -22,6 +22,7 @@ namespace MealRoulette
             string dbPath = Path.Combine(FileSystem.AppDataDirectory, "meals.db3");
             builder.Services.AddSingleton(x => new MealDatabase(dbPath));
             builder.Services.AddSingleton<MealService>();
+            builder.Services.AddSingleton<AccountService>();
 
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();

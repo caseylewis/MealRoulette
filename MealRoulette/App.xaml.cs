@@ -2,7 +2,7 @@
 {
     public partial class App : Application
     {
-        public App(Services.MealService mealService)
+        public App(Services.MealService mealService, Services.AccountService accountService)
         {
             InitializeComponent();
 

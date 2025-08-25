@@ -1,0 +1,116 @@
+@page "/account"
+@using MealRoulette.Models
+@inject MealRoulette.Services.AccountService AccountService
+
+<h3>Household Account</h3>
+
+@if (currentHouseholdId is null)
+{
+    <div class="card" style="padding:1rem; margin-bottom:1rem;">
+        <h4>Create Household</h4>
+        <div class="form-group">
+            <label>Email</label>
+            <input class="form-control" @bind="email" />
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input class="form-control" type="password" @bind="password" />
+        </div>
+        <button class="btn btn-primary" @onclick="CreateHousehold">Create</button>
+        <span style="margin:0 .5rem;">or</span>
+        <button class="btn btn-secondary" @onclick="SignIn">Sign In</button>
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div style="margin-top:.5rem; color:#dc2626;">@message</div>
+        }
+    </div>
+}
+else
+{
+    <p>Household Id: @currentHouseholdId</p>
+    <h4>Profiles</h4>
+    <div class="form-group" style="display:flex; gap:.5rem; align-items:center;">
+        <input class="form-control" style="max-width:240px;" placeholder="Profile name" @bind="newProfileName" />
+        <button class="btn btn-secondary" @onclick="AddProfile">Add Profile</button>
+    </div>
+
+    @if (profiles.Count == 0)
+    {
+        <p>No profiles yet. Add one above.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var p in profiles)
+            {
+                <li>
+                    <label>
+                        <input type="radio" name="activeProfile" value="@p.Id" @onchange="() => SetActiveProfile(p.Id)" checked="@(p.Id == currentProfileId)" /> @p.DisplayName
+                    </label>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private string email = string.Empty;
+    private string password = string.Empty;
+    private string message = string.Empty;
+    private int? currentHouseholdId;
+    private int? currentProfileId;
+    private List<UserProfile> profiles = new();
+    private string newProfileName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentHouseholdId = await AccountService.GetCurrentHouseholdIdAsync();
+        currentProfileId = await AccountService.GetCurrentProfileIdAsync();
+        if (currentHouseholdId is not null)
+        {
+            profiles = await AccountService.GetProfilesAsync(currentHouseholdId.Value);
+        }
+    }
+
+    private async Task CreateHousehold()
+    {
+        message = string.Empty;
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            message = "Email and password required.";
+            return;
+        }
+        await AccountService.CreateHouseholdAsync(email, password);
+        currentHouseholdId = await AccountService.GetCurrentHouseholdIdAsync();
+        profiles = currentHouseholdId is null ? new() : await AccountService.GetProfilesAsync(currentHouseholdId.Value);
+        StateHasChanged();
+    }
+
+    private async Task SignIn()
+    {
+        message = string.Empty;
+        if (!await AccountService.SignInAsync(email, password))
+        {
+            message = "Invalid credentials.";
+            return;
+        }
+        currentHouseholdId = await AccountService.GetCurrentHouseholdIdAsync();
+        profiles = currentHouseholdId is null ? new() : await AccountService.GetProfilesAsync(currentHouseholdId.Value);
+        StateHasChanged();
+    }
+
+    private async Task AddProfile()
+    {
+        if (currentHouseholdId is null) return;
+        if (string.IsNullOrWhiteSpace(newProfileName)) return;
+        await AccountService.CreateProfileAsync(currentHouseholdId.Value, newProfileName);
+        profiles = await AccountService.GetProfilesAsync(currentHouseholdId.Value);
+        newProfileName = string.Empty;
+    }
+
+    private async Task SetActiveProfile(int id)
+    {
+        await AccountService.SetCurrentProfileAsync(id);
+        currentProfileId = id;
+    }
+}

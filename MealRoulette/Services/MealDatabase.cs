@@ -18,10 +18,12 @@ namespace MealRoulette.Services
     public class MealDatabase
     {
         private readonly SQLiteAsyncConnection _database;
-        private const int CurrentDbVersion = 3; // bump version for MaxTimesPerWeek migration
+        private const int CurrentDbVersion = 4; // bump: add households/profiles
         private const string VersionKey = "DbVersion";
         private const string CurrentWeekKey = "CurrentWeekPlan";
         private const string CurrentWeekGroceryKey = "CurrentWeekGrocery";
+        private const string CurrentHouseholdKey = "CurrentHouseholdId";
+        private const string CurrentProfileKey = "CurrentProfileId";
         private bool _initialized = false;
 
         public MealDatabase(string dbPath)
@@ -38,6 +40,8 @@ namespace MealRoulette.Services
             await _database.CreateTableAsync<Meal>();
             await _database.CreateTableAsync<Ingredient>();
             await _database.CreateTableAsync<DbMeta>();
+            await _database.CreateTableAsync<HouseholdAccount>();
+            await _database.CreateTableAsync<UserProfile>();
 
             // Migration logic
             var version = await GetDbVersionAsync();
@@ -81,42 +85,36 @@ namespace MealRoulette.Services
 
         private async Task MigrateDatabase(int oldVersion, int newVersion)
         {
-            // Example migration to ensure Ingredients has an auto-increment PK Id and allows multiple rows per meal
             if (oldVersion < 2)
             {
-                // Inspect current Ingredients table
                 var cols = await _database.GetTableInfoAsync("Ingredients");
                 var hasId = cols.Any(c => c.Name == nameof(Ingredient.Id));
-
                 if (!hasId)
                 {
-                    // Rebuild Ingredients table without losing data
                     await _database.ExecuteAsync("CREATE TABLE IF NOT EXISTS Ingredients_New (Id INTEGER PRIMARY KEY AUTOINCREMENT, Name TEXT, Amount REAL, UnitOfMeasurement TEXT, MealName TEXT)");
-
-                    // If old Ingredients exists, copy data
                     if (cols?.Count > 0)
                     {
                         await _database.ExecuteAsync("INSERT INTO Ingredients_New (Name, Amount, UnitOfMeasurement, MealName) SELECT Name, Amount, UnitOfMeasurement, MealName FROM Ingredients");
                         await _database.ExecuteAsync("DROP TABLE IF EXISTS Ingredients");
                     }
-
                     await _database.ExecuteAsync("ALTER TABLE Ingredients_New RENAME TO Ingredients");
                 }
             }
-
             if (oldVersion < 3)
             {
-                // Handle Meals column rename from DesiredMonthly to MaxTimesPerWeek if needed
                 var mealCols = await _database.GetTableInfoAsync("Meals");
                 var hasDesiredMonthly = mealCols.Any(c => c.Name == "DesiredMonthly");
                 var hasMaxPerWeek = mealCols.Any(c => c.Name == "MaxTimesPerWeek");
                 if (hasDesiredMonthly && !hasMaxPerWeek)
                 {
-                    // Add new column and copy data
                     await _database.ExecuteAsync("ALTER TABLE Meals ADD COLUMN MaxTimesPerWeek INTEGER");
                     await _database.ExecuteAsync("UPDATE Meals SET MaxTimesPerWeek = COALESCE(DesiredMonthly, 1)");
-                    // Optionally leave old column; SQLite doesn't support drop column easily without table rebuild
                 }
+            }
+            if (oldVersion < 4)
+            {
+                await _database.CreateTableAsync<HouseholdAccount>();
+                await _database.CreateTableAsync<UserProfile>();
             }
         }
 
@@ -142,17 +140,12 @@ namespace MealRoulette.Services
 
         public async Task<int> SaveMealAsync(Meal meal)
         {
-            // Save meal
             var result = await _database.InsertOrReplaceAsync(meal);
-
-            // Remove old ingredients
             var oldIngredients = await GetIngredientsForMealAsync(meal.Name);
             foreach (var ing in oldIngredients)
             {
                 await _database.DeleteAsync(ing);
             }
-            
-            // Save new ingredients (always insert fresh rows)
             if (meal.Ingredients != null)
             {
                 foreach (var ingredient in meal.Ingredients)
@@ -167,13 +160,11 @@ namespace MealRoulette.Services
 
         public async Task<int> DeleteMealAsync(Meal meal)
         {
-            // Delete ingredients first
             var ingredients = await GetIngredientsForMealAsync(meal.Name);
             foreach (var ing in ingredients)
             {
                 await _database.DeleteAsync(ing);
             }
-            // Delete meal
             return await _database.DeleteAsync(meal);
         }
 
@@ -184,7 +175,6 @@ namespace MealRoulette.Services
 
         public Task<int> SaveIngredientAsync(Ingredient ingredient)
         {
-            // For direct saves elsewhere, prefer Insert for new items
             if (ingredient.Id == 0)
             {
                 ingredient.Id = 0;
@@ -232,6 +222,38 @@ namespace MealRoulette.Services
             {
                 return new();
             }
+        }
+
+        // --- Accounts & Profiles ---
+        public Task<int> SaveHouseholdAsync(HouseholdAccount household) => _database.InsertOrReplaceAsync(household);
+        public Task<List<HouseholdAccount>> GetHouseholdsAsync() => _database.Table<HouseholdAccount>().ToListAsync();
+        public Task<int> DeleteHouseholdAsync(HouseholdAccount household) => _database.DeleteAsync(household);
+
+        public Task<int> SaveUserProfileAsync(UserProfile profile) => _database.InsertOrReplaceAsync(profile);
+        public Task<List<UserProfile>> GetProfilesForHouseholdAsync(int householdId) => _database.Table<UserProfile>().Where(p => p.HouseholdId == householdId).ToListAsync();
+        public Task<int> DeleteUserProfileAsync(UserProfile profile) => _database.DeleteAsync(profile);
+
+        public async Task SetCurrentHouseholdAsync(int? id)
+        {
+            await _database.InsertOrReplaceAsync(new DbMeta { Key = CurrentHouseholdKey, Value = id?.ToString() ?? string.Empty });
+        }
+        public async Task<int?> GetCurrentHouseholdAsync()
+        {
+            var meta = await _database.Table<DbMeta>().Where(m => m.Key == CurrentHouseholdKey).FirstOrDefaultAsync();
+            if (meta == null || string.IsNullOrWhiteSpace(meta.Value)) return null;
+            if (int.TryParse(meta.Value, out var id)) return id;
+            return null;
+        }
+        public async Task SetCurrentProfileAsync(int? id)
+        {
+            await _database.InsertOrReplaceAsync(new DbMeta { Key = CurrentProfileKey, Value = id?.ToString() ?? string.Empty });
+        }
+        public async Task<int?> GetCurrentProfileAsync()
+        {
+            var meta = await _database.Table<DbMeta>().Where(m => m.Key == CurrentProfileKey).FirstOrDefaultAsync();
+            if (meta == null || string.IsNullOrWhiteSpace(meta.Value)) return null;
+            if (int.TryParse(meta.Value, out var id)) return id;
+            return null;
         }
     }
 
